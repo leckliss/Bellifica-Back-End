@@ -1,5 +1,7 @@
 package com.backend.bellifica.user.service;
 
+import com.backend.bellifica.agendamento.Agendamentos;
+import com.backend.bellifica.exception.UserNotFoundException;
 import com.backend.bellifica.user.Users;
 import com.backend.bellifica.user.repository.UsersRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,5 +40,14 @@ public class UsersServiceImpl implements UsersService {
         return usersRepository.save(users);
     }
 
+    @Override
+    public Users update(Users users) {
+        return usersRepository.findByEmail(users.getEmail())
+                .map(Users -> {
+                    Users.setNome(Users.getNome());
+                    Users.setSobrenome(Users.getSobrenome());
+                    return usersRepository.save(Users);
+                }).orElseThrow(() -> new RuntimeException(users.getEmail()));
+    }
 
 }

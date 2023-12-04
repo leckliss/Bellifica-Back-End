@@ -1,5 +1,6 @@
 package com.backend.bellifica.user;
 
+import com.backend.bellifica.agendamento.Agendamentos;
 import com.backend.bellifica.dto.LoginDto;
 import com.backend.bellifica.exception.UserNotFoundException;
 import com.backend.bellifica.user.repository.UsersRepository;
@@ -128,12 +129,7 @@ public class UsersController {
 
 
     @PutMapping("/user/{id}")
-    Users updateUser(@RequestBody Users newUser, @PathVariable Long id) {
-        return usersRepository.findById(id)
-                .map(Users -> {
-                    Users.setNome(newUser.getNome());
-                    Users.setSobrenome(newUser.getSobrenome());
-                    return usersRepository.save(Users);
-                }).orElseThrow(() -> new UserNotFoundException(id));
+    Users updateUser(@RequestBody Users users) {
+            return usersServices.update(users);
     }
 }
