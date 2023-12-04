@@ -3,9 +3,13 @@ package com.backend.bellifica.user.service;
 import com.backend.bellifica.user.Users;
 import com.backend.bellifica.user.repository.UsersRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @Service
 public class UsersServiceImpl implements UsersService {
@@ -33,4 +37,6 @@ public class UsersServiceImpl implements UsersService {
         users.setSenha(passwordEncoder.encode(users.getSenha()));
         return usersRepository.save(users);
     }
+
+
 }

@@ -1,6 +1,8 @@
 package com.backend.bellifica.user;
 
 import com.backend.bellifica.dto.LoginDto;
+import com.backend.bellifica.exception.UserNotFoundException;
+import com.backend.bellifica.user.repository.UsersRepository;
 import com.backend.bellifica.user.service.UsersService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,10 +14,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import com.backend.bellifica.security.JwtTokenProvider;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -39,6 +38,10 @@ public class UsersController {
         this.authenticationManager = authenticationManager;
         this.jwtTokenProvider = jwtTokenProvider;
     }
+
+    @Autowired
+    public UsersRepository usersRepository;
+
 
     @PostMapping("/cadastro")
     public ResponseEntity<?> createUsers(@RequestBody Users users) {
@@ -121,5 +124,16 @@ public class UsersController {
         public void setNome(String nome) {
             this.nome = nome;
         }
+    }
+
+
+    @PutMapping("/user/{id}")
+    Users updateUser(@RequestBody Users newUser, @PathVariable Long id) {
+        return usersRepository.findById(id)
+                .map(Users -> {
+                    Users.setNome(newUser.getNome());
+                    Users.setSobrenome(newUser.getSobrenome());
+                    return usersRepository.save(Users);
+                }).orElseThrow(() -> new UserNotFoundException(id));
     }
 }
