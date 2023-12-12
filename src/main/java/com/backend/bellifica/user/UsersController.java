@@ -1,10 +1,9 @@
 package com.backend.bellifica.user;
 
-import com.backend.bellifica.agendamento.Agendamentos;
 import com.backend.bellifica.dto.LoginDto;
-import com.backend.bellifica.exception.UserNotFoundException;
 import com.backend.bellifica.user.repository.UsersRepository;
 import com.backend.bellifica.user.service.UsersService;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,94 +19,111 @@ import com.backend.bellifica.security.JwtTokenProvider;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 @RestController
 @RequestMapping("/users")
 public class UsersController {
 
-    private final UsersService usersServices;
+    private final UsersService usersService;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
 
     private static final Logger logger = LoggerFactory.getLogger(UsersController.class);
 
     @Autowired
-    public UsersController(UsersService usersServices,
+    public UsersController(UsersService usersService,
                            AuthenticationManager authenticationManager,
                            JwtTokenProvider jwtTokenProvider) {
-        this.usersServices = usersServices;
+        this.usersService = usersService;
         this.authenticationManager = authenticationManager;
         this.jwtTokenProvider = jwtTokenProvider;
     }
 
-    @Autowired
-    public UsersRepository usersRepository;
-
-
     @PostMapping("/cadastro")
-    public ResponseEntity<?> createUsers(@RequestBody Users users) {
+    public ResponseEntity<Users> createUser(@RequestBody @Valid Users users) {
         logger.info("Recebendo solicitação para cadastrar um profissional: {}", users);
-        try {
-            Users createdUser = usersServices.create(users);
-            logger.info("Profissional cadastrado com sucesso: {}", createdUser);
-
-            // Remover informações sensíveis antes de retornar
-            createdUser.setSenha(null);
-            createdUser.setRegras(null);
-
-            return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
-        } catch (ResponseStatusException ex) {
-            logger.error("Erro ao cadastrar usuário: {}", ex.getReason());
-            return ResponseEntity.status(ex.getStatusCode()).body(ex.getReason());
-        }
+        Users createdUser = usersService.create(users);
+        return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginDto loginDto) {
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword())
-            );
+    public ResponseEntity<JwtTokenResponse> login(@RequestBody @Valid LoginDto loginDto) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword())
+        );
+        Users user = usersService.findByEmail(loginDto.getEmail());
+        List<GrantedAuthority> authorities = new ArrayList<>(authentication.getAuthorities());
+        String token = jwtTokenProvider.createToken(authentication.getName(), authorities);
+        JwtTokenResponse response = new JwtTokenResponse(token, user);
+        return ResponseEntity.ok(response);
+    }
 
-            // Aqui, assumimos que você tem um método no seu serviço chamado findByEmail que retorna uma instância de Users.
-            Users user = usersServices.findByEmail(loginDto.getEmail());
-
-            List<GrantedAuthority> authorities = new ArrayList<>(authentication.getAuthorities());
-            String token = jwtTokenProvider.createToken(authentication.getName(), authorities);
-
-            JwtTokenResponse response = new JwtTokenResponse(token, user.getNome(), user.getNomeNegocio());
-
-            return ResponseEntity.ok(response);
-        } catch (AuthenticationException e) {
-            logger.error("Erro de autenticação: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body("As credenciais fornecidas são inválidas. Por favor, tente novamente.");
-        } catch (ClassCastException e) {
-            logger.error("Erro na conversão da classe: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Ocorreu um erro interno. Por favor, tente novamente.");
-        }
+    @PutMapping("/user/{id}")
+    public ResponseEntity<Users> updateUser(@PathVariable long id, @RequestBody @Valid Users users) {
+        Users updatedUser = usersService.update(id, users);
+        return ResponseEntity.ok(updatedUser);
     }
 
 
     public static class JwtTokenResponse {
         private String token;
         private String nome;
+        private String sobrenome;
+        private String profissao;
         private String nomeNegocio;
+        private int id;
+        private String email;
+        private Date dataNascimento;
+        private boolean iniciante;
+        private String senha;
 
-        public JwtTokenResponse(String token, String nome, String nomeNegocio) {
+        public JwtTokenResponse(String token, Users user) {
+
+
             this.token = token;
-            this.nome = nome;
-            this.nomeNegocio = nomeNegocio;
+            this.nome = user.getNome();
+            this.sobrenome = user.getSobrenome();
+            this.profissao = user.getProfissao() != null ? user.getProfissao().toString() : null;
+            this.nomeNegocio = user.getNomeNegocio();
+            this.id = (int) user.getId();
+            this.email = user.getEmail();
+            this.dataNascimento = user.getDataNascimento();
+            this.iniciante = user.isIniciante();
+            this.senha = user.getSenha();
+
         }
 
-        // Getters e Setters para 'token' e 'nome'
         public String getToken() {
             return token;
         }
 
         public void setToken(String token) {
             this.token = token;
+        }
+
+        public String getNome() {
+            return nome;
+        }
+
+        public void setNome(String nome) {
+            this.nome = nome;
+        }
+
+        public String getSobrenome() {
+            return sobrenome;
+        }
+
+        public void setSobrenome(String sobrenome) {
+            this.sobrenome = sobrenome;
+        }
+
+        public String getProfissao() {
+            return profissao;
+        }
+
+        public void setProfissao(String profissao) {
+            this.profissao = profissao;
         }
 
         public String getNomeNegocio() {
@@ -118,18 +134,44 @@ public class UsersController {
             this.nomeNegocio = nomeNegocio;
         }
 
-        public String getNome() {
-            return nome;
+        public int getId() {
+            return id;
         }
 
-        public void setNome(String nome) {
-            this.nome = nome;
+        public void setId(int id) {
+            this.id = id;
         }
-    }
 
+        public String getEmail() {
+            return email;
+        }
 
-    @PutMapping("/user/{id}")
-    Users updateUser(@RequestBody Users users) {
-            return usersServices.update(users);
+        public void setEmail(String email) {
+            this.email = email;
+        }
+
+        public Date getDataNascimento() {
+            return dataNascimento;
+        }
+
+        public void setDataNascimento(Date dataNascimento) {
+            this.dataNascimento = dataNascimento;
+        }
+
+        public boolean isIniciante() {
+            return iniciante;
+        }
+
+        public void setIniciante(boolean iniciante) {
+            this.iniciante = iniciante;
+        }
+
+        public String getSenha() {
+            return senha;
+        }
+
+        public void setSenha(String senha) {
+            this.senha = senha;
+        }
     }
 }

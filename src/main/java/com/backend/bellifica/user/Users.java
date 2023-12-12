@@ -75,7 +75,12 @@ public class Users {
 
     public enum Profissao {
         CABELELEIRO, BARBEIRO, MAQUIADOR, MANICURE, PEDICURE, DESIGNER_SOMBRANCELHAS, DEPILADOR, CONSULTOR_PRODUTOS_BELEZA,
-        ESTETICISTA_CORPORAL, MASSOTERAPEUTA, ESTETICISTA
+        ESTETICISTA_CORPORAL, MASSOTERAPEUTA, ESTETICISTA;
+
+        @Override
+        public String toString() {
+            return name();
+        }
     }
 
     @ManyToMany(fetch = FetchType.EAGER)

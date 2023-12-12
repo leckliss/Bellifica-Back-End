@@ -32,9 +32,13 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests((request) -> request
                         .requestMatchers(HttpMethod.POST, "/users/**").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/users/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/agendamentos/**").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/agendamentos/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/agendamentos/**").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/agendamentos/**").permitAll()
                         .anyRequest()
                         .authenticated()
-                ).addFilterBefore(customBasicAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                )
                 .build();
     }
 

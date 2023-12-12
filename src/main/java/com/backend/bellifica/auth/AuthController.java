@@ -64,7 +64,7 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED).body(registeredUser);
     }
 
-    // Classe interna para a resposta de autenticação JWT
+
     @Getter
     @Setter
     static class JwtAuthenticationResponse {
